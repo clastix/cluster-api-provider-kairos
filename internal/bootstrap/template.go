@@ -70,6 +70,55 @@ type InstallConfig struct {
 	Reboot bool
 }
 
+// RenderKubeadmCloudConfig renders the kubeadm Kairos cloud-config template.
+func RenderKubeadmCloudConfig(data TemplateData) (string, error) {
+	templatePath := "templates/kubeadm_kairos_cloud_config.yaml.tmpl"
+	tmplContent, err := templateFS.ReadFile(templatePath)
+	if err != nil {
+		return "", fmt.Errorf("failed to read template: %w", err)
+	}
+
+	// Create template with custom functions
+	tmpl := template.New("kubeadm_kairos_cloud_config").Funcs(template.FuncMap{
+		"indent": func(spaces int, s string) string {
+			if s == "" {
+				return ""
+			}
+			indent := strings.Repeat(" ", spaces)
+			lines := strings.Split(s, "\n")
+			var result []string
+			for _, line := range lines {
+				if line != "" {
+					result = append(result, indent+line)
+				} else {
+					result = append(result, "")
+				}
+			}
+			return strings.Join(result, "\n")
+		},
+		"trimSuffix": func(suffix, s string) string {
+			return strings.TrimSuffix(s, suffix)
+		},
+		"replaceAll": func(old, new, s string) string {
+			return strings.ReplaceAll(s, old, new)
+		},
+	})
+
+	// Parse template
+	tmpl, err = tmpl.Parse(string(tmplContent))
+	if err != nil {
+		return "", fmt.Errorf("failed to parse template: %w", err)
+	}
+
+	// Render template
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, data); err != nil {
+		return "", fmt.Errorf("failed to execute template: %w", err)
+	}
+
+	return buf.String(), nil
+}
+
 // RenderK0sCloudConfig renders the k0s Kairos cloud-config template
 func RenderK0sCloudConfig(data TemplateData) (string, error) {
 	// Load template (split per provider)
@@ -102,6 +151,9 @@ func RenderK0sCloudConfig(data TemplateData) (string, error) {
 		},
 		"trimSuffix": func(suffix, s string) string {
 			return strings.TrimSuffix(s, suffix)
+		},
+		"replaceAll": func(old, new, s string) string {
+			return strings.ReplaceAll(s, old, new)
 		},
 	})
 
@@ -152,6 +204,9 @@ func RenderK3sCloudConfig(data TemplateData) (string, error) {
 		},
 		"trimSuffix": func(suffix, s string) string {
 			return strings.TrimSuffix(s, suffix)
+		},
+		"replaceAll": func(old, new, s string) string {
+			return strings.ReplaceAll(s, old, new)
 		},
 	})
 
