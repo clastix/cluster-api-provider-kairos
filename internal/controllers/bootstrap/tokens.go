@@ -76,7 +76,7 @@ func tokenFromWorkerRef(ctx context.Context, c client.Reader, ownerNamespace str
 	secret := &corev1.Secret{}
 	if err := c.Get(ctx, secretKey, secret); err != nil {
 		if apierrors.IsNotFound(err) {
-			return "", errTokenNotReady
+			return "", fmt.Errorf("%s secret %s/%s not found: %w", label, secretKey.Namespace, secretKey.Name, errTokenNotReady)
 		}
 		return "", fmt.Errorf("failed to get %s secret %s/%s: %w", label, secretKey.Namespace, secretKey.Name, err)
 	}
@@ -124,9 +124,9 @@ func tokenFromLegacyRef(ctx context.Context, c client.Reader, namespace string, 
 	secret := &corev1.Secret{}
 	if err := c.Get(ctx, secretKey, secret); err != nil {
 		if apierrors.IsNotFound(err) {
-			return "", errTokenNotReady
+			return "", fmt.Errorf("token secret %s/%s not found: %w", secretKey.Namespace, secretKey.Name, errTokenNotReady)
 		}
-		return "", fmt.Errorf("failed to get token secret: %w", err)
+		return "", fmt.Errorf("failed to get token secret %s/%s: %w", secretKey.Namespace, secretKey.Name, err)
 	}
 	if tokenData, ok := secret.Data["token"]; ok {
 		return string(tokenData), nil
@@ -152,12 +152,12 @@ func (r *KairosConfigReconciler) resolveControlPlaneJoinToken(ctx context.Contex
 	switch distribution {
 	case "k3s":
 		if kc.Spec.K3sTokenSecretRef == nil {
-			return "", errTokenNotReady
+			return "", fmt.Errorf("spec.k3sTokenSecretRef is not set yet: %w", errTokenNotReady)
 		}
 		return tokenFromWorkerRef(ctx, r.Client, kc.Namespace, kc.Spec.K3sTokenSecretRef, "k3s control-plane join token")
 	case "k0s":
 		if kc.Spec.ControlPlaneJoinTokenSecretRef == nil {
-			return "", errTokenNotReady
+			return "", fmt.Errorf("spec.controlPlaneJoinTokenSecretRef is not set yet: %w", errTokenNotReady)
 		}
 		return tokenFromWorkerRef(ctx, r.Client, kc.Namespace, kc.Spec.ControlPlaneJoinTokenSecretRef, "k0s control-plane join token")
 	default:

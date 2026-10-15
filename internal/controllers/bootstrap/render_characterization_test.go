@@ -272,7 +272,7 @@ func TestGenerateCloudConfig_TokenGetErrorIsHard(t *testing.T) {
 			mutate: func(s *bootstrapv1beta2.KairosConfigSpec) {
 				s.TokenSecretRef = &corev1.ObjectReference{Name: "legacy"}
 			},
-			wantErr: "failed to get token secret: boom",
+			wantErr: "failed to get token secret default/legacy: boom",
 		},
 	}
 

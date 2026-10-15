@@ -1186,6 +1186,7 @@ func (r *KairosControlPlaneReconciler) setHAConditions(ctx context.Context, kcp 
 	// unchanged rather than failing the reconcile.
 	etcdStatus, err := r.readEtcdStatus(ctx, cluster)
 	if err != nil {
+		ctrl.LoggerFrom(ctx).V(4).Info("Leaving EtcdHealthy unchanged; etcd-status Secret not readable", "error", err.Error())
 		return
 	}
 	voting := etcdVotingHealthyCount(etcdStatus)
@@ -2061,6 +2062,9 @@ func (r *KairosControlPlaneReconciler) secretToKairosControlPlane(ctx context.Co
 
 	cluster := &clusterv1.Cluster{}
 	if err := r.Get(ctx, types.NamespacedName{Name: clusterName, Namespace: secret.Namespace}, cluster); err != nil {
+		if !apierrors.IsNotFound(err) {
+			ctrl.LoggerFrom(ctx).Error(err, "Failed to get Cluster while mapping a kubeconfig Secret", "cluster", clusterName)
+		}
 		return nil
 	}
 

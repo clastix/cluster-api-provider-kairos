@@ -270,7 +270,8 @@ func (r *KairosConfigReconciler) renderCloudConfigM(ctx context.Context, log log
 			return "", WorkerJoinMaterial{}, fmt.Errorf("failed to get control plane LB endpoint: %w", err)
 		}
 		if lbEndpoint == "" {
-			return "", WorkerJoinMaterial{}, errLBEndpointNotReady
+			return "", WorkerJoinMaterial{}, fmt.Errorf("control-plane LoadBalancer Service %s/%s has no address yet: %w",
+				cluster.Namespace, templateData.ControlPlaneLBServiceName, errLBEndpointNotReady)
 		}
 		templateData.ControlPlaneLBEndpoint = lbEndpoint
 	}
